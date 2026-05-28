@@ -693,29 +693,26 @@ BEGIN
         Agt_mail,
         Agt_legajo
     )
-    SELECT DISTINCT
-        a.Agen_id_agencia,
-        d.Dire_id_direccion,
-        m.Agente_Dni,
-        m.Agente_Nombre,
-        m.Agente_Apellido,
-        m.Agente_Fecha_Nac,
-        m.Agente_Telefono,
-        m.Agente_Mail,
+    SELECT
+        MAX(a.Agen_id_agencia),
+        MAX(d.Dire_id_direccion),
+        MAX(m.Agente_Dni),
+        MAX(m.Agente_Nombre),
+        MAX(m.Agente_Apellido),
+        MAX(m.Agente_Fecha_Nac),
+        MAX(m.Agente_Telefono),
+        MAX(m.Agente_Mail),
         m.Agente_Legajo
     FROM gd_esquema.Maestra m
-    INNER JOIN [PROYECTO_S.E.L.F].Agencia a
-        ON a.Agen_id_agencia = m.Agencia_Nro_Agencia
-    INNER JOIN [PROYECTO_S.E.L.F].Provincia pr
-        ON pr.Prov_nombre = m.Agente_Provincia
-    INNER JOIN [PROYECTO_S.E.L.F].Localidad l
-        ON l.Loca_id_provincia = pr.Prov_id
-       AND l.Loca_nombre = m.Agente_Localidad
-    INNER JOIN [PROYECTO_S.E.L.F].Direccion d
+    INNER JOIN [PROYECTO_S.E.L.F].Agencia a ON a.Agen_id_agencia = m.Agencia_Nro_Agencia
+    LEFT JOIN [PROYECTO_S.E.L.F].Localidad l
+        ON l.Loca_nombre = m.Agente_Localidad
+    LEFT JOIN [PROYECTO_S.E.L.F].Direccion d
         ON d.Dire_id_localidad = l.Loca_id_localidad
        AND d.Dire_calle = m.Agente_Direccion
        AND d.Dire_numero = N'0'
-    WHERE m.Agente_Legajo IS NOT NULL;
+    WHERE m.Agente_Legajo IS NOT NULL
+    GROUP BY m.Agente_Legajo;
 END;
 GO
 
