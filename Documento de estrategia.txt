@@ -1,0 +1,19 @@
+Estrategia de migración
+
+País: Unificación de fuentes mediante UNION. Los países de aeropuertos, hospedajes y aerolíneas se juntaron en una sola inserción, agregando Argentina de forma explícita porque no siempre aparece en esas columnas.
+
+Provincia: Inserción en dos pasos. Primero se cargaron las provincias argentinas reales, y después se agregó una provincia ficticia 'Sin provincia' para cada país extranjero, que era necesaria para mantener la integridad referencial.
+
+Localidad: Mismo enfoque en dos pasos que provincia, ya que una localidad siempre pertenece a una provincia.
+
+Dirección: Adaptación por datos incompletos. La Maestra no separa calle y número, así que se guardó la dirección completa en Dire_calle y se puso '0' como valor fijo en Dire_numero.
+
+Agencia: Migración directa con JOIN por dirección.
+
+Agente: Corrección por datos sucios y de duplicación. Nos dimos cuenta de que 29 agentes tenían localidades inválidas en la Maestra y no se estaban migrando. Se usó LEFT JOIN para no descartar los que no tenían dirección válida, y GROUP BY con MAX() para evitar duplicados por legajo.
+
+Ciudad: Migración directa con DISTINCT.
+
+Solicitud de cotización: Join por identidad completa del cliente. Para no perder registros por valores nulos, el join con Cliente se hizo comparando todos sus campos con ISNULL. Se llegó al total esperado de 13355 solicitudes.
+
+Ítem ciudad: Migración directa con DISTINCT. Relación entre solicitudes y ciudades.
