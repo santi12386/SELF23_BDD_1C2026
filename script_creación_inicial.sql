@@ -43,36 +43,37 @@ DROP PROCEDURE IF EXISTS [PROYECTO_S.E.L.F].Migrar_Provincias;
 DROP PROCEDURE IF EXISTS [PROYECTO_S.E.L.F].Migrar_Paises;
 GO
 
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Aspecto;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Encuesta;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_vuelo;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_excursion;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_detalle;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_hospedaje;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_venta;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Venta;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Vuelo;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Aeropuerto;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Codigo_pais;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Aerolinea;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Excursion;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Proveedor;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Propuesta;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Prop_estado;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Habitacion;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Hospedaje;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_ciudad;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Sol_cotizacion;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Ciudad;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Medio_de_pago;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Canal_de_venta;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Agente;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Agencia;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Cliente;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Direccion;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Localidad;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Provincia;
-DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Pais;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Aspecto;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Encuesta;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_vuelo;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_excursion;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_detalle;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_detalle_propuesta;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_hospedaje;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_venta;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Venta;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Propuesta;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Prop_estado;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Habitacion;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Hospedaje;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Vuelo;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Aeropuerto;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Codigo_pais;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Aerolinea;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Excursion;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Proveedor;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Item_ciudad;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Sol_cotizacion;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Ciudad;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Medio_de_pago;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Canal_de_venta;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Agente;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Agencia;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Cliente;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Direccion;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Localidad;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Provincia;
+  DROP TABLE IF EXISTS [PROYECTO_S.E.L.F].Pais;
 GO
 
 CREATE TABLE [PROYECTO_S.E.L.F].Pais (
@@ -378,12 +379,10 @@ GO
 CREATE TABLE [PROYECTO_S.E.L.F].Item_detalle (
     I_Detalle_id_item_detalle INT IDENTITY(1,1) PRIMARY KEY,
     I_Detalle_id_propuesta BIGINT NOT NULL,
-    I_Detalle_id_hospedaje INT NOT NULL,
+    I_Detalle_Tipo NVARCHAR(50) NOT NULL,
     CONSTRAINT FK_ItemDetalle_Propuesta FOREIGN KEY (I_Detalle_id_propuesta)
         REFERENCES [PROYECTO_S.E.L.F].Propuesta(Prop_id_propuesta),
-    CONSTRAINT FK_ItemDetalle_Hospedaje FOREIGN KEY (I_Detalle_id_hospedaje)
-        REFERENCES [PROYECTO_S.E.L.F].Item_hospedaje(I_Hospedaje_id_item),
-    CONSTRAINT UQ_ItemDetalle UNIQUE (I_Detalle_id_propuesta, I_Detalle_id_hospedaje)
+    CONSTRAINT UQ_ItemDetalle UNIQUE (I_Detalle_id_propuesta, I_Detalle_Tipo)
 );
 GO
 
@@ -1236,41 +1235,33 @@ GO
 CREATE PROCEDURE [PROYECTO_S.E.L.F].Migrar_Item_Detalle_Propuesta
 AS
 BEGIN
-    INSERT INTO [PROYECTO_S.E.L.F].Item_detalle (
+    INSERT INTO [PROYECTO_S.E.L.F].Item_detalle(
         I_Detalle_id_propuesta,
-        I_Detalle_id_hospedaje
+        I_Detalle_tipo
     )
     SELECT DISTINCT
         p.Prop_id_propuesta,
-        ih.I_Hospedaje_id_item
+        N'hospedaje'
     FROM gd_esquema.Maestra m
     INNER JOIN [PROYECTO_S.E.L.F].Propuesta p
         ON p.Prop_id_propuesta = m.Propuesta_Nro_Propuesta
-    INNER JOIN [PROYECTO_S.E.L.F].Pais pa
-        ON pa.Pais_nombre = m.Hospedaje_Pais
-    INNER JOIN [PROYECTO_S.E.L.F].Provincia pr
-        ON pr.Prov_id_pais = pa.Pais_id
-       AND pr.Prov_nombre = N'Sin provincia'
-    INNER JOIN [PROYECTO_S.E.L.F].Localidad l
-        ON l.Loca_id_provincia = pr.Prov_id
-       AND l.Loca_nombre = m.Hospedaje_Ciudad
-    INNER JOIN [PROYECTO_S.E.L.F].Direccion d
-        ON d.Dire_id_localidad = l.Loca_id_localidad
-       AND d.Dire_calle = m.Hospedaje_Direccion
-       AND d.Dire_numero = N'0'
-    INNER JOIN [PROYECTO_S.E.L.F].Hospedaje ho
-        ON ho.Hosp_id_direccion = d.Dire_id_direccion
-    INNER JOIN [PROYECTO_S.E.L.F].Habitacion h
-        ON h.Habi_id_hospedaje = ho.Hosp_id_hospedaje
-       AND h.Habi_nombre = m.Habitacion_Nombre
-    INNER JOIN [PROYECTO_S.E.L.F].Item_hospedaje ih
-        ON ih.I_Hospedaje_id_habitacion = h.Habi_id_habitacion
-       AND ih.I_Hospedaje_fecha_ingreso = m.Detalle_Propuesta_Hospedaje_Fecha_Desde
-       AND ih.I_Hospedaje_fecha_egreso = m.Detalle_Propuesta_Hospedaje_Fecha_Hasta
-       AND ih.I_Hospedaje_cant_personas = m.Detalle_Propuesta_Hospedaje_Cant
-       AND ih.I_Hospedaje_precio_unit = m.Detalle_Propuesta_Hospedaje_Precio
     WHERE m.Propuesta_Nro_Propuesta IS NOT NULL
-      AND m.Detalle_Propuesta_Hospedaje_Fecha_Desde IS NOT NULL;
+      AND (
+          m.Detalle_Propuesta_Hospedaje_Fecha_Desde IS NOT NULL
+          OR m.Detalle_Venta_Hospedaje_Cod_Reserva IS NOT NULL
+      )
+
+    UNION
+
+    SELECT DISTINCT
+        p.Prop_id_propuesta,
+        N'vuelo'
+    FROM gd_esquema.Maestra m
+    INNER JOIN [PROYECTO_S.E.L.F].Propuesta p
+        ON p.Prop_id_propuesta = m.Propuesta_Nro_Propuesta
+    WHERE m.Propuesta_Nro_Propuesta IS NOT NULL
+      AND m.Detalle_Venta_Vuelo_Cod_Reserva IS NOT NULL
+
 END;
 GO
 
@@ -1438,5 +1429,3 @@ EXEC [PROYECTO_S.E.L.F].Migrar_Items_Vuelo;
 EXEC [PROYECTO_S.E.L.F].Migrar_Encuestas;
 EXEC [PROYECTO_S.E.L.F].Migrar_Aspectos;
 GO
-
-select * from [PROYECTO_S.E.L.F].Cliente;
