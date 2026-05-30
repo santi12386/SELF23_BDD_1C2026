@@ -345,13 +345,13 @@ CREATE TABLE [PROYECTO_S.E.L.F].Venta (
 GO
 
 CREATE TABLE [PROYECTO_S.E.L.F].Item_venta (
-    Item_id INT IDENTITY(1,1) PRIMARY KEY,
-    Venta_id BIGINT NOT NULL,
-    Item_tipo NVARCHAR(50) NOT NULL,
-    Item_codigo_reserva NVARCHAR(255) NULL,
-    CONSTRAINT FK_ItemVenta_Venta FOREIGN KEY (Venta_id)
+    I_Venta_id_item_venta INT IDENTITY(1,1) PRIMARY KEY,
+    I_Venta_nro_de_venta BIGINT NOT NULL,
+    I_Venta_Tipo NVARCHAR(50) NOT NULL,
+    I_Venta_codigo_reserva NVARCHAR(255) NULL,
+    CONSTRAINT FK_ItemVenta_Venta FOREIGN KEY (I_Venta_nro_de_venta)
         REFERENCES [PROYECTO_S.E.L.F].Venta(Vent_nro_de_venta),
-    CONSTRAINT UQ_ItemVenta UNIQUE (Venta_id, Item_tipo, Item_codigo_reserva)
+    CONSTRAINT UQ_ItemVenta UNIQUE (I_Venta_nro_de_venta, I_Venta_Tipo, I_Venta_codigo_reserva)
 );
 GO
 
@@ -395,7 +395,7 @@ CREATE TABLE [PROYECTO_S.E.L.F].Item_excursion (
     I_Excursion_precio_unit DECIMAL(18,2) NULL,
     I_Excursion_subtotal DECIMAL(18,2) NULL,
     CONSTRAINT FK_ItemExcursion_ItemVenta FOREIGN KEY (I_Excursion_id_item)
-        REFERENCES [PROYECTO_S.E.L.F].Item_venta(Item_id),
+        REFERENCES [PROYECTO_S.E.L.F].Item_venta(I_Venta_id_item_venta),
     CONSTRAINT FK_ItemExcursion_Excursion FOREIGN KEY (I_Excursion_id_excursion)
         REFERENCES [PROYECTO_S.E.L.F].Excursion(Excu_id_excursion)
 );
@@ -408,7 +408,7 @@ CREATE TABLE [PROYECTO_S.E.L.F].Item_vuelo (
     I_Vuelo_precio_unit DECIMAL(18,2) NULL,
     I_Vuelo_subtotal DECIMAL(18,2) NULL,
     CONSTRAINT FK_ItemVuelo_ItemVenta FOREIGN KEY (I_Vuelo_id_item)
-        REFERENCES [PROYECTO_S.E.L.F].Item_venta(Item_id),
+        REFERENCES [PROYECTO_S.E.L.F].Item_venta(I_Venta_id_item_venta),
     CONSTRAINT FK_ItemVuelo_Vuelo FOREIGN KEY (I_Vuelo_id_vuelo)
         REFERENCES [PROYECTO_S.E.L.F].Vuelo(Vuel_id_vuelo)
 );
@@ -1155,9 +1155,9 @@ CREATE PROCEDURE [PROYECTO_S.E.L.F].Migrar_Items_Venta
 AS
 BEGIN
     INSERT INTO [PROYECTO_S.E.L.F].Item_venta (
-        Venta_id,
-        Item_tipo,
-        Item_codigo_reserva
+        I_Venta_nro_de_venta,
+        I_Venta_Tipo,
+        I_Venta_codigo_reserva
     )
     SELECT DISTINCT
         m.Venta_Nro_Venta,
@@ -1286,7 +1286,7 @@ BEGIN
         I_Excursion_subtotal
     )
     SELECT DISTINCT
-        iv.Item_id,
+        iv.I_Venta_id_item_venta,
         e.Excu_id_excursion,
         m.Detalle_Venta_Excursion_Fecha_Reserva,
         m.Detalle_Venta_Excursion_Cant,
@@ -1294,9 +1294,9 @@ BEGIN
         m.Detalle_Venta_Excursion_Subtotal
     FROM gd_esquema.Maestra m
     INNER JOIN [PROYECTO_S.E.L.F].Item_venta iv
-        ON iv.Venta_id = m.Venta_Nro_Venta
-       AND iv.Item_tipo = N'excursion'
-       AND iv.Item_codigo_reserva = CAST(m.Detalle_Venta_Excursion_Cod_Reserva AS NVARCHAR(255))
+        ON iv.I_Venta_nro_de_venta = m.Venta_Nro_Venta
+       AND iv.I_Venta_Tipo = N'excursion'
+       AND iv.I_Venta_codigo_reserva = CAST(m.Detalle_Venta_Excursion_Cod_Reserva AS NVARCHAR(255))
     INNER JOIN [PROYECTO_S.E.L.F].Proveedor p
         ON p.Prov_nombre = m.Proveedor_Nombre
        AND ISNULL(p.Prov_mail, N'') = ISNULL(m.Proveedor_Mail, N'')
@@ -1321,16 +1321,16 @@ BEGIN
         I_Vuelo_subtotal
     )
     SELECT DISTINCT
-        iv.Item_id,
+        iv.I_Venta_id_item_venta,
         v.Vuel_id_vuelo,
         m.Detalle_Venta_Vuelo_Cantidad_Pasajes,
         m.Detalle_Venta_Vuelo_Precio_Unitario,
         m.Detalle_Venta_Vuelo_Subtotal
     FROM gd_esquema.Maestra m
     INNER JOIN [PROYECTO_S.E.L.F].Item_venta iv
-        ON iv.Venta_id = m.Venta_Nro_Venta
-       AND iv.Item_tipo = N'vuelo'
-       AND iv.Item_codigo_reserva = CAST(m.Detalle_Venta_Vuelo_Cod_Reserva AS NVARCHAR(255))
+        ON iv.I_Venta_nro_de_venta = m.Venta_Nro_Venta
+       AND iv.I_Venta_Tipo = N'vuelo'
+       AND iv.I_Venta_codigo_reserva = CAST(m.Detalle_Venta_Vuelo_Cod_Reserva AS NVARCHAR(255))
     INNER JOIN [PROYECTO_S.E.L.F].Aeropuerto aps
         ON aps.AeroP_nombre = m.Aeropuerto_Salida_Descripcion
     INNER JOIN [PROYECTO_S.E.L.F].Aeropuerto apl
@@ -1357,12 +1357,12 @@ BEGIN
         Encu_fecha,
         Encu_comentario
     )
-    SELECT
+    SELECT DISTINCT
         m.Encuesta_Codigo_Encuesta,
-        MAX(cl.Clie_id_cliente),
-        MAX(ag.Agt_id_agente),
-        MAX(m.Encuesta_Fecha_Encuesta),
-        MAX(CAST(m.Encuesta_Comentarios AS NVARCHAR(MAX)))
+        cl.Clie_id_cliente,
+        ag.Agt_id_agente,
+        m.Encuesta_Fecha_Encuesta,
+        CAST(m.Encuesta_Comentarios AS NVARCHAR(MAX))
     FROM gd_esquema.Maestra m
     LEFT JOIN [PROYECTO_S.E.L.F].Provincia prc
         ON prc.Prov_nombre = m.Cliente_Provincia
@@ -1383,8 +1383,7 @@ BEGIN
        AND ISNULL(cl.Clie_id_direccion, -1) = ISNULL(dc.Dire_id_direccion, -1)
     LEFT JOIN [PROYECTO_S.E.L.F].Agente ag
         ON ag.Agt_legajo = m.Agente_Legajo
-    WHERE m.Encuesta_Codigo_Encuesta IS NOT NULL
-    GROUP BY m.Encuesta_Codigo_Encuesta;
+    WHERE m.Encuesta_Codigo_Encuesta IS NOT NULL;
 END;
 GO
 
@@ -1439,3 +1438,5 @@ EXEC [PROYECTO_S.E.L.F].Migrar_Items_Vuelo;
 EXEC [PROYECTO_S.E.L.F].Migrar_Encuestas;
 EXEC [PROYECTO_S.E.L.F].Migrar_Aspectos;
 GO
+
+select * from [PROYECTO_S.E.L.F].Cliente;
