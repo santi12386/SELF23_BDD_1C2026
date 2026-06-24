@@ -395,6 +395,7 @@ GO
 
 DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_DISTRIBUCION_FACTURACION
 DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_V_TICKET_PROMEDIO;
+DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_SOLICITUDES_POR_TEMPORADA;
 GO
 
 /* ticket Promedio */
@@ -452,3 +453,24 @@ GROUP BY
     t.tiempo_anio,
     s.tipo_servicio_descripcion;
 GO
+
+
+CREATE VIEW [PROYECTO_S.E.L.F].BI_SOLICITUDES_POR_TEMPORADA
+AS
+SELECT
+    count(*) as Cantidad_de_solicitudes,
+    t.tiempo_anio, 
+    t.tiempo_temporada, 
+    r.rango_etario_descripcion 
+FROM [PROYECTO_S.E.L.F].BI_DIM_FACT_SOLICITUD s
+JOIN [PROYECTO_S.E.L.F].BI_DIM_RANGO_ETARIO r 
+    on r.id_rango_etario = s.fact_solicitud_rango_etario_id
+JOIN [PROYECTO_S.E.L.F].BI_DIM_TIEMPO t 
+    on t.tiempo_id = s.fact_solicitud_tiempo_id
+GROUP by
+    t.tiempo_anio, 
+    t.tiempo_temporada, 
+    r.rango_etario_descripcion;    
+GO
+
+
