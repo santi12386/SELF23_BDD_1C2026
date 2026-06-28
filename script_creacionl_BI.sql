@@ -396,9 +396,9 @@ GO
 DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_DISTRIBUCION_FACTURACION
 DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_V_TICKET_PROMEDIO;
 DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_SOLICITUDES_POR_TEMPORADA;
+DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_SOLICITUDES_ANTICIPACION_PROMEDIO;
 GO
 
-/* ticket Promedio */
 CREATE VIEW [PROYECTO_S.E.L.F].BI_V_TICKET_PROMEDIO
 AS
 SELECT
@@ -474,3 +474,145 @@ GROUP by
 GO
 
 
+CREATE VIEW [PROYECTO_S.E.L.F].BI_SOLICITUDES_ANTICIPACION_PROMEDIO
+AS
+SELECT
+    t.tiempo_anio,
+    t.tiempo_cuatrimestre,
+    r.rango_etario_descripcion,
+    AVG(s.fact_solicitud_dias_anticipacion) AS promedio_dias_anticipacion
+FROM [PROYECTO_S.E.L.F].BI_DIM_FACT_SOLICITUD s
+JOIN [PROYECTO_S.E.L.F].BI_DIM_RANGO_ETARIO r 
+    ON r.id_rango_etario = s.fact_solicitud_rango_etario_id
+JOIN [PROYECTO_S.E.L.F].BI_DIM_TIEMPO t 
+    ON t.tiempo_id = s.fact_solicitud_tiempo_id
+GROUP BY
+    t.tiempo_anio,
+    t.tiempo_cuatrimestre,
+    r.rango_etario_descripcion;
+GO
+
+
+DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_TASA_ACEPTACION_PROPUESTAS;
+GO
+
+CREATE VIEW [PROYECTO_S.E.L.F].BI_TASA_ACEPTACION_PROPUESTAS
+AS
+SELECT
+    t.tiempo_anio,
+    t.tiempo_cuatrimestre,
+    COUNT(*) AS total_propuestas,
+    SUM(CASE
+            WHEN e.estado_propuesta_descripcion = 'Aceptada' THEN 1
+            ELSE 0
+        END) AS propuestas_aceptadas,
+    SUM(CASE
+            WHEN e.estado_propuesta_descripcion = 'Aceptada' THEN 1
+            ELSE 0
+        END) * 100.0 / COUNT(*) AS porcentaje_aceptacion
+FROM [PROYECTO_S.E.L.F].BI_DIM_FACT_PROPUESTA p
+JOIN [PROYECTO_S.E.L.F].BI_DIM_TIEMPO t
+    ON t.tiempo_id = p.fact_propuesta_tiempo_id
+JOIN [PROYECTO_S.E.L.F].BI_DIM_ESTADO_PROPUESTA e
+    ON e.estado_propuesta_id = p.fact_propuesta_estado
+GROUP BY
+    t.tiempo_anio,
+    t.tiempo_cuatrimestre;
+GO
+
+
+DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_COTIZACION_PROMEDIO_TEMPORADA;
+GO
+
+CREATE VIEW [PROYECTO_S.E.L.F].BI_COTIZACION_PROMEDIO_TEMPORADA
+AS
+SELECT
+    t.tiempo_anio,
+    t.tiempo_temporada,
+    AVG(p.fact_propuesta_importe) AS cotizacion_promedio
+FROM [PROYECTO_S.E.L.F].BI_DIM_FACT_PROPUESTA p
+JOIN [PROYECTO_S.E.L.F].BI_DIM_TIEMPO t
+    ON t.tiempo_id = p.fact_propuesta_tiempo_id
+GROUP BY
+    t.tiempo_anio,
+    t.tiempo_temporada;
+GO
+
+
+DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_TIEMPO_PROMEDIO_RESPUESTA;
+GO
+
+CREATE VIEW [PROYECTO_S.E.L.F].BI_TIEMPO_PROMEDIO_RESPUESTA
+AS
+SELECT
+    t.tiempo_anio,
+    t.tiempo_mes,
+    r.rango_etario_descripcion,
+    AVG(p.fact_propuesta_dias_estimados) AS tiempo_promedio_respuesta
+FROM [PROYECTO_S.E.L.F].BI_DIM_FACT_PROPUESTA p
+JOIN [PROYECTO_S.E.L.F].BI_DIM_TIEMPO t
+    ON t.tiempo_id = p.fact_propuesta_tiempo_id
+JOIN [PROYECTO_S.E.L.F].BI_DIM_RANGO_ETARIO r
+    ON r.id_rango_etario = p.fact_propuesta_rango_etario_agente_id
+GROUP BY
+    t.tiempo_anio,
+    t.tiempo_mes,
+    r.rango_etario_descripcion;
+GO
+
+
+DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_DESVIO_PRESUPUESTO;
+GO
+
+CREATE VIEW [PROYECTO_S.E.L.F].BI_DESVIO_PRESUPUESTO
+AS
+SELECT
+    AVG(p.fact_propuesta_importe - p.fact_propuesta_presupuesto_estimado) AS desvio_promedio
+FROM [PROYECTO_S.E.L.F].BI_DIM_FACT_PROPUESTA p
+WHERE p.fact_propuesta_importe IS NOT NULL
+  AND p.fact_propuesta_presupuesto_estimado IS NOT NULL;
+GO
+
+
+DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_RANKING_ASPECTOS;
+GO
+
+CREATE VIEW [PROYECTO_S.E.L.F].BI_RANKING_ASPECTOS
+AS
+SELECT
+    t.tiempo_anio,
+    t.tiempo_cuatrimestre,
+    a.aspecto_descripcion,
+    AVG(e.fact_encuesta_puntaje) AS promedio_puntaje
+FROM [PROYECTO_S.E.L.F].BI_DIM_FACT_ENCUESTA e
+JOIN [PROYECTO_S.E.L.F].BI_DIM_TIEMPO t
+    ON t.tiempo_id = e.fact_encuesta_tiempo_id
+JOIN [PROYECTO_S.E.L.F].BI_DIM_ASPECTO a
+    ON a.aspecto_id = e.fact_encuesta_aspecto_id
+GROUP BY
+    t.tiempo_anio,
+    t.tiempo_cuatrimestre,
+    a.aspecto_descripcion;
+GO
+
+
+DROP VIEW IF EXISTS [PROYECTO_S.E.L.F].BI_SATISFACCION_PROMEDIO_AGENTE;
+GO
+
+CREATE VIEW [PROYECTO_S.E.L.F].BI_SATISFACCION_PROMEDIO_AGENTE
+AS
+SELECT
+    t.tiempo_anio,
+    t.tiempo_mes,
+    r.rango_etario_descripcion,
+    AVG(e.fact_encuesta_puntaje) AS satisfaccion_promedio
+FROM [PROYECTO_S.E.L.F].BI_DIM_FACT_ENCUESTA e
+JOIN [PROYECTO_S.E.L.F].BI_DIM_TIEMPO t
+    ON t.tiempo_id = e.fact_encuesta_tiempo_id
+JOIN [PROYECTO_S.E.L.F].BI_DIM_RANGO_ETARIO r
+    ON r.id_rango_etario = e.fact_encuesta_rango_etario_id
+GROUP BY
+    t.tiempo_anio,
+    t.tiempo_mes,
+    r.rango_etario_descripcion;
+GO
